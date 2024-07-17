@@ -395,6 +395,78 @@ export class Link {
     return this.updateClient(source);
   }
 
+  // Try to open a channel that has already been initialized on the source chain
+  public async openInitializedChannel(
+    sender: Side,
+    srcChannelId: string,
+    srcPort: string,
+    destPort: string,
+    ordering: Order,
+    version: string,
+  ): Promise<ChannelPair> {
+    this.logger.info(
+      `Create channel with sender ${this.chain(
+        sender,
+      )}: ${srcPort} => ${destPort}`,
+    );
+    const { src, dest } = this.getEnds(sender);
+    // try on dest
+    const proof = await prepareChannelHandshake(
+      src.client,
+      dest.client,
+      dest.clientID,
+      srcPort,
+      srcChannelId,
+    );
+
+    const { channelId: channelIdDest } = await dest.client.channelOpenTry(
+      destPort,
+      { portId: srcPort, channelId: srcChannelId },
+      ordering,
+      dest.connectionID,
+      version,
+      version,
+      proof,
+    );
+
+    // ack on src
+    const proofAck = await prepareChannelHandshake(
+      dest.client,
+      src.client,
+      src.clientID,
+      destPort,
+      channelIdDest,
+    );
+    await src.client.channelOpenAck(
+      srcPort,
+      srcChannelId,
+      channelIdDest,
+      version,
+      proofAck,
+    );
+
+    // confirm on dest
+    const proofConfirm = await prepareChannelHandshake(
+      src.client,
+      dest.client,
+      dest.clientID,
+      srcPort,
+      srcChannelId,
+    );
+    await dest.client.channelOpenConfirm(destPort, channelIdDest, proofConfirm);
+
+    return {
+      src: {
+        portId: srcPort,
+        channelId: srcChannelId,
+      },
+      dest: {
+        portId: destPort,
+        channelId: channelIdDest,
+      },
+    };
+  }
+
   public async createChannel(
     sender: Side,
     srcPort: string,

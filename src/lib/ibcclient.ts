@@ -237,7 +237,7 @@ export class IbcClient {
     );
   }
 
-  private constructor(
+  constructor(
     signingClient: SigningStargateClient,
     tmClient: CometClient,
     senderAddress: string,
