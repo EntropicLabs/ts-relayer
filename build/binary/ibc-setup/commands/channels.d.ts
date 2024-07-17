@@ -17,5 +17,5 @@ export type Options = {
     readonly connection: string | null;
 };
 export declare function channels(flags: Flags, logger: Logger): Promise<void>;
-export declare function channelStateAsText(state: ChannelState): "Closed" | "Init" | "Open" | "Tryopen" | "UninitializedUnspecified" | "Unrecognized";
+export declare function channelStateAsText(state: ChannelState): "Init" | "Closed" | "Open" | "Tryopen" | "UninitializedUnspecified" | "Unrecognized";
 export declare function run(options: Options, logger: Logger): Promise<void>;
