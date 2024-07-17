@@ -1,0 +1,5 @@
+type Params = {
+    homeFlag?: string;
+};
+export declare function resolveHomeOption({ homeFlag }: Params): string;
+export {};
