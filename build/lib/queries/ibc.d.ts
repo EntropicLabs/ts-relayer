@@ -1,9 +1,11 @@
 import { QueryClient } from "@cosmjs/stargate";
+import { Any } from "cosmjs-types/google/protobuf/any";
 import { QueryChannelClientStateResponse, QueryChannelConsensusStateResponse, QueryChannelResponse, QueryChannelsResponse, QueryConnectionChannelsResponse, QueryNextSequenceReceiveResponse, QueryPacketAcknowledgementResponse, QueryPacketAcknowledgementsResponse, QueryPacketCommitmentResponse, QueryPacketCommitmentsResponse, QueryPacketReceiptResponse, QueryUnreceivedAcksResponse, QueryUnreceivedPacketsResponse } from "cosmjs-types/ibc/core/channel/v1/query";
 import { Height } from "cosmjs-types/ibc/core/client/v1/client";
 import { QueryClientParamsResponse, QueryClientStateResponse, QueryClientStatesResponse, QueryConsensusStateResponse, QueryConsensusStatesResponse } from "cosmjs-types/ibc/core/client/v1/query";
 import { QueryClientConnectionsResponse, QueryConnectionClientStateResponse, QueryConnectionConsensusStateResponse, QueryConnectionResponse, QueryConnectionsResponse } from "cosmjs-types/ibc/core/connection/v1/query";
 import { ClientState as TendermintClientState, ConsensusState as TendermintConsensusState } from "cosmjs-types/ibc/lightclients/tendermint/v1/tendermint";
+export declare function decodeTendermintClientStateAny(clientState: Any | undefined): TendermintClientState;
 export declare function heightQueryString(height: Height): string;
 export interface IbcExtension {
     readonly ibc: {
