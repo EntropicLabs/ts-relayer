@@ -9,6 +9,7 @@ export {
   RelayInfo,
   RelayedHeights,
   testutils,
+  decodeTendermintClientStateAny,
 } from "./lib";
 
 export { setupContracts } from "./cw20";

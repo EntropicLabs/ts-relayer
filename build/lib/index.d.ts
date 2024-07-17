@@ -4,3 +4,4 @@ export { Link, RelayInfo, RelayedHeights, PacketFilter } from "./link";
 export { Logger, NoopLogger } from "./logger";
 export * as testutils from "./helpers";
 export { CosmWasmSigner } from "./helpers";
+export { decodeTendermintClientStateAny } from "./queries/ibc";

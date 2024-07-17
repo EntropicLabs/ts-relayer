@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.testutils = exports.NoopLogger = exports.Link = exports.IbcClient = exports.Endpoint = void 0;
+exports.decodeTendermintClientStateAny = exports.testutils = exports.NoopLogger = exports.Link = exports.IbcClient = exports.Endpoint = void 0;
 var endpoint_1 = require("./endpoint");
 Object.defineProperty(exports, "Endpoint", { enumerable: true, get: function () { return endpoint_1.Endpoint; } });
 var ibcclient_1 = require("./ibcclient");
@@ -33,4 +33,6 @@ Object.defineProperty(exports, "Link", { enumerable: true, get: function () { re
 var logger_1 = require("./logger");
 Object.defineProperty(exports, "NoopLogger", { enumerable: true, get: function () { return logger_1.NoopLogger; } });
 exports.testutils = __importStar(require("./helpers"));
-//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiaW5kZXguanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyIuLi8uLi9zcmMvbGliL2luZGV4LnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O0FBQUEsdUNBQXVEO0FBQTdCLG9HQUFBLFFBQVEsT0FBQTtBQUNsQyx5Q0FBd0M7QUFBL0Isc0dBQUEsU0FBUyxPQUFBO0FBQ2xCLCtCQUF1RTtBQUE5RCw0RkFBQSxJQUFJLE9BQUE7QUFDYixtQ0FBOEM7QUFBN0Isb0dBQUEsVUFBVSxPQUFBO0FBQzNCLHVEQUF1QyJ9
+var ibc_1 = require("./queries/ibc");
+Object.defineProperty(exports, "decodeTendermintClientStateAny", { enumerable: true, get: function () { return ibc_1.decodeTendermintClientStateAny; } });
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiaW5kZXguanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyIuLi8uLi9zcmMvbGliL2luZGV4LnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O0FBQUEsdUNBQXVEO0FBQTdCLG9HQUFBLFFBQVEsT0FBQTtBQUNsQyx5Q0FBd0M7QUFBL0Isc0dBQUEsU0FBUyxPQUFBO0FBQ2xCLCtCQUF1RTtBQUE5RCw0RkFBQSxJQUFJLE9BQUE7QUFDYixtQ0FBOEM7QUFBN0Isb0dBQUEsVUFBVSxPQUFBO0FBQzNCLHVEQUF1QztBQUV2QyxxQ0FBK0Q7QUFBdEQscUhBQUEsOEJBQThCLE9BQUEifQ==
