@@ -182,7 +182,7 @@ test.serial(
       connA,
       ics20.version,
     );
-    const proof = await prepareChannelHandshake(
+    const { proof } = await prepareChannelHandshake(
       src,
       dest,
       oldLink.endB.clientID,

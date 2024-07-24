@@ -42,6 +42,7 @@ export interface ChannelHandshake {
     id: ChannelInfo;
     proofHeight: Height;
     proof: Uint8Array;
+    version?: string;
 }
 export interface ChannelInfo {
     readonly portId: string;
@@ -118,5 +119,8 @@ export interface CreateClientArgs {
 }
 export declare function buildCreateClientArgs(src: IbcClient, trustPeriodSec?: number | null): Promise<CreateClientArgs>;
 export declare function prepareConnectionHandshake(src: IbcClient, dest: IbcClient, clientIdSrc: string, clientIdDest: string, connIdSrc: string): Promise<ConnectionHandshakeProof>;
-export declare function prepareChannelHandshake(src: IbcClient, dest: IbcClient, clientIdDest: string, portId: string, channelId: string): Promise<ChannelHandshake>;
+export declare function prepareChannelHandshake(src: IbcClient, dest: IbcClient, clientIdDest: string, portId: string, channelId: string): Promise<{
+    proof: ChannelHandshake;
+    version?: string;
+}>;
 export {};

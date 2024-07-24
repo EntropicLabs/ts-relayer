@@ -180,6 +180,7 @@ export interface ChannelHandshake {
   proofHeight: Height;
   // proof of the state of the channel on remote chain
   proof: Uint8Array;
+  version?: string;
 }
 
 export interface ChannelInfo {
@@ -519,16 +520,21 @@ export class IbcClient {
     const proofHeight = this.ensureRevisionHeight(headerHeight);
     const queryHeight = subtractBlock(proofHeight, 1n);
 
-    const { proof } = await this.query.ibc.proof.channel.channel(
+    const channel = await this.query.ibc.proof.channel.channel(
       id.portId,
       id.channelId,
       queryHeight,
     );
+    const { proof } = channel;
+    this.logger.verbose(`Get channel proof for ${id.portId}/${id.channelId}`, {
+      channel,
+    });
 
     return {
       id,
       proofHeight,
       proof,
+      version: channel.channel?.version,
     };
   }
 
@@ -1487,12 +1493,12 @@ export async function prepareChannelHandshake(
   clientIdDest: string,
   portId: string,
   channelId: string,
-): Promise<ChannelHandshake> {
+): Promise<{ proof: ChannelHandshake; version?: string }> {
   // ensure the last transaction was committed to the header (one block after it was included)
   await src.waitOneBlock();
   // update client on dest
   const headerHeight = await dest.doUpdateClient(clientIdDest, src);
   // get a proof (for the proven height)
   const proof = await src.getChannelProof({ portId, channelId }, headerHeight);
-  return proof;
+  return { proof, version: proof.version };
 }

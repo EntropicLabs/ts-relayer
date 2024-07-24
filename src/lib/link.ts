@@ -411,7 +411,7 @@ export class Link {
     );
     const { src, dest } = this.getEnds(sender);
     // try on dest
-    const proof = await prepareChannelHandshake(
+    const { proof } = await prepareChannelHandshake(
       src.client,
       dest.client,
       dest.clientID,
@@ -430,23 +430,24 @@ export class Link {
     );
 
     // ack on src
-    const proofAck = await prepareChannelHandshake(
-      dest.client,
-      src.client,
-      src.clientID,
-      destPort,
-      channelIdDest,
-    );
+    const { proof: proofAck, version: versionAck } =
+      await prepareChannelHandshake(
+        dest.client,
+        src.client,
+        src.clientID,
+        destPort,
+        channelIdDest,
+      );
     await src.client.channelOpenAck(
       srcPort,
       srcChannelId,
       channelIdDest,
-      version,
+      versionAck ?? version,
       proofAck,
     );
 
     // confirm on dest
-    const proofConfirm = await prepareChannelHandshake(
+    const { proof: proofConfirm } = await prepareChannelHandshake(
       src.client,
       dest.client,
       dest.clientID,
@@ -490,7 +491,7 @@ export class Link {
     );
 
     // try on dest
-    const proof = await prepareChannelHandshake(
+    const { proof } = await prepareChannelHandshake(
       src.client,
       dest.client,
       dest.clientID,
@@ -509,23 +510,24 @@ export class Link {
     );
 
     // ack on src
-    const proofAck = await prepareChannelHandshake(
-      dest.client,
-      src.client,
-      src.clientID,
-      destPort,
-      channelIdDest,
-    );
+    const { proof: proofAck, version: versionAck } =
+      await prepareChannelHandshake(
+        dest.client,
+        src.client,
+        src.clientID,
+        destPort,
+        channelIdDest,
+      );
     await src.client.channelOpenAck(
       srcPort,
       channelIdSrc,
       channelIdDest,
-      version,
+      versionAck ?? version,
       proofAck,
     );
 
     // confirm on dest
-    const proofConfirm = await prepareChannelHandshake(
+    const { proof: proofConfirm } = await prepareChannelHandshake(
       src.client,
       dest.client,
       dest.clientID,
