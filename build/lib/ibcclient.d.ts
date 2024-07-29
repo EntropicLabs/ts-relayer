@@ -1,5 +1,5 @@
 import { EncodeObject, OfflineSigner } from "@cosmjs/proto-signing";
-import { AuthExtension, BankExtension, Coin, Event, GasPrice, QueryClient, SigningStargateClient, SigningStargateClientOptions, StakingExtension } from "@cosmjs/stargate";
+import { AuthExtension, BankExtension, Coin, DeliverTxResponse, Event, GasPrice, QueryClient, SigningStargateClient, SigningStargateClientOptions, StakingExtension, StdFee } from "@cosmjs/stargate";
 import { comet38, CometClient, ReadonlyDateWithNanoseconds, tendermint34, tendermint37 } from "@cosmjs/tendermint-rpc";
 import { Any } from "cosmjs-types/google/protobuf/any";
 import { Order, Packet } from "cosmjs-types/ibc/core/channel/v1/channel";
@@ -53,6 +53,7 @@ export type IbcClientOptions = SigningStargateClientOptions & {
     gasPrice: GasPrice;
     estimatedBlockTime: number;
     estimatedIndexerTime: number;
+    granter?: string;
 };
 export declare class IbcClient {
     readonly gasPrice: GasPrice;
@@ -60,6 +61,7 @@ export declare class IbcClient {
     readonly query: QueryClient & AuthExtension & BankExtension & IbcExtension & StakingExtension;
     readonly tm: CometClient;
     readonly senderAddress: string;
+    readonly granterAddress?: string;
     readonly logger: Logger;
     readonly chainId: string;
     readonly revisionNumber: bigint;
@@ -67,6 +69,8 @@ export declare class IbcClient {
     readonly estimatedIndexerTime: number;
     static connectWithSigner(endpoint: string, signer: OfflineSigner, senderAddress: string, options: IbcClientOptions): Promise<IbcClient>;
     constructor(signingClient: SigningStargateClient, tmClient: CometClient, senderAddress: string, chainId: string, options: IbcClientOptions);
+    calculateFee(messages: readonly EncodeObject[], memo?: string): Promise<StdFee>;
+    signAndBroadcast(messages: readonly EncodeObject[], memo?: string): Promise<DeliverTxResponse>;
     revisionHeight(height: number): Height;
     ensureRevisionHeight(height: number | Height): Height;
     timeoutHeight(blocksInFuture: number): Promise<Height>;
@@ -91,7 +95,7 @@ export declare class IbcClient {
     getTimeoutProof({ originalPacket }: Ack, headerHeight: Height | number): Promise<Uint8Array>;
     doUpdateClient(clientId: string, src: IbcClient): Promise<Height>;
     /***** These are all direct wrappers around message constructors ********/
-    sendTokens(recipientAddress: string, transferAmount: readonly Coin[], memo?: string): Promise<MsgResult>;
+    sendTokens(recipientAddress: string, transferAmount: Coin[], memo?: string): Promise<MsgResult>;
     sendMultiMsg(msgs: EncodeObject[]): Promise<MsgResult>;
     createTendermintClient(clientState: TendermintClientState, consensusState: TendermintConsensusState): Promise<CreateClientResult>;
     updateTendermintClient(clientId: string, header: TendermintHeader): Promise<MsgResult>;

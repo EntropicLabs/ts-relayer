@@ -1,13 +1,22 @@
 import { toAscii, toBase64 } from "@cosmjs/encoding";
-import { EncodeObject, OfflineSigner, Registry } from "@cosmjs/proto-signing";
+import { Uint53 } from "@cosmjs/math";
+import {
+  coins,
+  EncodeObject,
+  OfflineSigner,
+  Registry,
+} from "@cosmjs/proto-signing";
 import {
   AuthExtension,
   BankExtension,
   Coin,
   defaultRegistryTypes,
+  DeliverTxResponse,
   Event,
   GasPrice,
   isDeliverTxFailure,
+  MsgSendEncodeObject,
+  MsgTransferEncodeObject,
   QueryClient,
   setupAuthExtension,
   setupBankExtension,
@@ -15,6 +24,7 @@ import {
   SigningStargateClient,
   SigningStargateClientOptions,
   StakingExtension,
+  StdFee,
 } from "@cosmjs/stargate";
 import {
   comet38,
@@ -76,7 +86,6 @@ import {
   timestampFromDateNanos,
   toIntHeight,
 } from "./utils";
-
 type CometHeader = tendermint34.Header | tendermint37.Header | comet38.Header;
 type CometCommitResponse =
   | tendermint34.CommitResponse
@@ -193,6 +202,7 @@ export type IbcClientOptions = SigningStargateClientOptions & {
   gasPrice: GasPrice;
   estimatedBlockTime: number;
   estimatedIndexerTime: number;
+  granter?: string;
 };
 export class IbcClient {
   public readonly gasPrice: GasPrice;
@@ -204,6 +214,7 @@ export class IbcClient {
     StakingExtension;
   public readonly tm: CometClient;
   public readonly senderAddress: string;
+  public readonly granterAddress?: string;
   public readonly logger: Logger;
 
   public readonly chainId: string;
@@ -262,6 +273,37 @@ export class IbcClient {
     this.logger = options.logger ?? new NoopLogger();
     this.estimatedBlockTime = options.estimatedBlockTime;
     this.estimatedIndexerTime = options.estimatedIndexerTime;
+    this.granterAddress = options.granter;
+  }
+
+  public async calculateFee(
+    messages: readonly EncodeObject[],
+    memo?: string,
+  ): Promise<StdFee> {
+    const gasEstimation = await this.sign.simulate(
+      this.senderAddress,
+      messages,
+      memo,
+    );
+    const gasLimit = Math.round(gasEstimation * 1.4);
+    const { denom, amount: gasPriceAmount } = this.gasPrice;
+    const amount = gasPriceAmount
+      .multiply(new Uint53(gasLimit))
+      .ceil()
+      .toString();
+    return {
+      amount: coins(amount, denom),
+      gas: gasLimit.toString(),
+      granter: this.granterAddress,
+    };
+  }
+
+  public async signAndBroadcast(
+    messages: readonly EncodeObject[],
+    memo?: string,
+  ): Promise<DeliverTxResponse> {
+    const fee = await this.calculateFee(messages, memo);
+    return this.sign.signAndBroadcast(this.senderAddress, messages, fee, memo);
   }
 
   public revisionHeight(height: number): Height {
@@ -610,7 +652,7 @@ export class IbcClient {
 
   public async sendTokens(
     recipientAddress: string,
-    transferAmount: readonly Coin[],
+    transferAmount: Coin[],
     memo?: string,
   ): Promise<MsgResult> {
     this.logger.verbose(`Send tokens to ${recipientAddress}`);
@@ -620,13 +662,15 @@ export class IbcClient {
       transferAmount,
       memo,
     });
-    const result = await this.sign.sendTokens(
-      this.senderAddress,
-      recipientAddress,
-      transferAmount,
-      "auto",
-      memo,
-    );
+    const sendMsg: MsgSendEncodeObject = {
+      typeUrl: "/cosmos.bank.v1beta1.MsgSend",
+      value: {
+        fromAddress: this.senderAddress,
+        toAddress: recipientAddress,
+        amount: transferAmount,
+      },
+    };
+    const result = await this.signAndBroadcast([sendMsg], memo);
     if (isDeliverTxFailure(result)) {
       throw new Error(createDeliverTxFailureMessage(result));
     }
@@ -643,12 +687,7 @@ export class IbcClient {
     this.logger.debug(`Multiple msgs:`, {
       msgs,
     });
-    const senderAddress = this.senderAddress;
-    const result = await this.sign.signAndBroadcast(
-      senderAddress,
-      msgs,
-      "auto",
-    );
+    const result = await this.signAndBroadcast(msgs);
     if (isDeliverTxFailure(result)) {
       throw new Error(createDeliverTxFailureMessage(result));
     }
@@ -681,11 +720,7 @@ export class IbcClient {
     };
     this.logger.debug("MsgCreateClient", createMsg);
 
-    const result = await this.sign.signAndBroadcast(
-      senderAddress,
-      [createMsg],
-      "auto",
-    );
+    const result = await this.signAndBroadcast([createMsg]);
     if (isDeliverTxFailure(result)) {
       throw new Error(createDeliverTxFailureMessage(result));
     }
@@ -734,11 +769,7 @@ export class IbcClient {
       }),
     );
 
-    const result = await this.sign.signAndBroadcast(
-      senderAddress,
-      [updateMsg],
-      "auto",
-    );
+    const result = await this.signAndBroadcast([updateMsg]);
     if (isDeliverTxFailure(result)) {
       throw new Error(createDeliverTxFailureMessage(result));
     }
@@ -770,11 +801,7 @@ export class IbcClient {
     };
     this.logger.debug(`MsgConnectionOpenInit`, msg);
 
-    const result = await this.sign.signAndBroadcast(
-      senderAddress,
-      [msg],
-      "auto",
-    );
+    const result = await this.signAndBroadcast([msg]);
     if (isDeliverTxFailure(result)) {
       throw new Error(createDeliverTxFailureMessage(result));
     }
@@ -846,11 +873,7 @@ export class IbcClient {
       }),
     );
 
-    const result = await this.sign.signAndBroadcast(
-      senderAddress,
-      [msg],
-      "auto",
-    );
+    const result = await this.signAndBroadcast([msg]);
     if (isDeliverTxFailure(result)) {
       throw new Error(createDeliverTxFailureMessage(result));
     }
@@ -918,11 +941,7 @@ export class IbcClient {
       }),
     );
 
-    const result = await this.sign.signAndBroadcast(
-      senderAddress,
-      [msg],
-      "auto",
-    );
+    const result = await this.signAndBroadcast([msg]);
     if (isDeliverTxFailure(result)) {
       throw new Error(createDeliverTxFailureMessage(result));
     }
@@ -956,11 +975,7 @@ export class IbcClient {
       }),
     );
 
-    const result = await this.sign.signAndBroadcast(
-      senderAddress,
-      [msg],
-      "auto",
-    );
+    const result = await this.signAndBroadcast([msg]);
     if (isDeliverTxFailure(result)) {
       throw new Error(createDeliverTxFailureMessage(result));
     }
@@ -1000,11 +1015,7 @@ export class IbcClient {
     };
     this.logger.debug("MsgChannelOpenInit", msg);
 
-    const result = await this.sign.signAndBroadcast(
-      senderAddress,
-      [msg],
-      "auto",
-    );
+    const result = await this.signAndBroadcast([msg]);
     if (isDeliverTxFailure(result)) {
       throw new Error(createDeliverTxFailureMessage(result));
     }
@@ -1063,11 +1074,7 @@ export class IbcClient {
       }),
     );
 
-    const result = await this.sign.signAndBroadcast(
-      senderAddress,
-      [msg],
-      "auto",
-    );
+    const result = await this.signAndBroadcast([msg]);
     if (isDeliverTxFailure(result)) {
       throw new Error(createDeliverTxFailureMessage(result));
     }
@@ -1121,11 +1128,7 @@ export class IbcClient {
       }),
     );
 
-    const result = await this.sign.signAndBroadcast(
-      senderAddress,
-      [msg],
-      "auto",
-    );
+    const result = await this.signAndBroadcast([msg]);
     if (isDeliverTxFailure(result)) {
       throw new Error(createDeliverTxFailureMessage(result));
     }
@@ -1163,11 +1166,7 @@ export class IbcClient {
       }),
     );
 
-    const result = await this.sign.signAndBroadcast(
-      senderAddress,
-      [msg],
-      "auto",
-    );
+    const result = await this.signAndBroadcast([msg]);
     if (isDeliverTxFailure(result)) {
       throw new Error(createDeliverTxFailureMessage(result));
     }
@@ -1234,11 +1233,7 @@ export class IbcClient {
         }),
       ),
     });
-    const result = await this.sign.signAndBroadcast(
-      senderAddress,
-      msgs,
-      "auto",
-    );
+    const result = await this.signAndBroadcast(msgs);
     if (isDeliverTxFailure(result)) {
       throw new Error(createDeliverTxFailureMessage(result));
     }
@@ -1314,11 +1309,7 @@ export class IbcClient {
         }),
       ),
     });
-    const result = await this.sign.signAndBroadcast(
-      senderAddress,
-      msgs,
-      "auto",
-    );
+    const result = await this.signAndBroadcast(msgs);
     if (isDeliverTxFailure(result)) {
       throw new Error(createDeliverTxFailureMessage(result));
     }
@@ -1394,11 +1385,7 @@ export class IbcClient {
         }),
       ),
     });
-    const result = await this.sign.signAndBroadcast(
-      senderAddress,
-      msgs,
-      "auto",
-    );
+    const result = await this.signAndBroadcast(msgs);
     if (isDeliverTxFailure(result)) {
       throw new Error(createDeliverTxFailureMessage(result));
     }
@@ -1419,16 +1406,22 @@ export class IbcClient {
     timeoutTime?: number,
   ): Promise<MsgResult> {
     this.logger.verbose(`Transfer tokens to ${receiver}`);
-    const result = await this.sign.sendIbcTokens(
-      this.senderAddress,
-      receiver,
-      token,
-      sourcePort,
-      sourceChannel,
-      timeoutHeight,
-      timeoutTime,
-      "auto",
-    );
+    const timeoutTimestampNanoseconds = timeoutTime
+      ? BigInt(timeoutTime) * BigInt(1_000_000_000)
+      : undefined;
+    const transferMsg: MsgTransferEncodeObject = {
+      typeUrl: "/ibc.applications.transfer.v1.MsgTransfer",
+      value: MsgTransfer.fromPartial({
+        sourcePort,
+        sourceChannel,
+        sender: this.senderAddress,
+        receiver,
+        token,
+        timeoutHeight,
+        timeoutTimestamp: timeoutTimestampNanoseconds,
+      }),
+    };
+    const result = await this.signAndBroadcast([transferMsg]);
     if (isDeliverTxFailure(result)) {
       throw new Error(createDeliverTxFailureMessage(result));
     }
